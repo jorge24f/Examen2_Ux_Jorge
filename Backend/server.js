@@ -34,7 +34,7 @@ app.listen(port, () => {
 }); 
 
 
-///////////////////////
+////////////////////
 app.post('/createPost',async (req,res)=>{
     try{
         let datos = req.body;
@@ -89,10 +89,58 @@ app.get('/listPost',async (req,res)=>{
     }
 });
 
-app.put('/editPost',(req,res)=>{
+app.put('/editPost/:usuarioID',async (req,res)=>{
+    try{
+        //console.log(req.params.id);
+        const client = new MongoClient(uri);
+        const database = client.db('Examen2');
+        const collection = database.collection('Post');
 
+        const resultado = await collection.updateOne({
+            usuarioID: req.params.usuarioID
+        },{
+            $set:{
+                ...req.body
+            }
+        });
+        res.status(200).send({
+            message: 'Se actualizo el Post!',
+            resultado: resultado
+        });
+    }catch(error){
+        console.log("No se pudo actualizar el Post!", error);
+        res.status(500).send({
+            message: "No se pudo actualizar el Post!"+error
+        });
+    }
 });
 
-app.delete('/deletePost',(req,res)=>{
+app.delete('/deletePost/:usuarioID', async (req,res)=>{
+    try{
+        const client = new MongoClient(uri);
+        const database = client.db('Examen2');
+        const collection = database.collection('Post');
+        
+        //const query = {_id: new ObjectId(req.body.id)};
+        const query = {usuarioID: req.params.usuarioID};
+        const resultado = await collection.deleteOne(query);
 
+        if(resultado.deletedCount===1){
+            console.log("Post eliminado con exito!");
+            res.status(200).send({
+                message: 'Post eliminado con exito!',
+                resultado: resultado
+            });
+        }else{
+            res.status(200).send({
+                message: 'No se encontro el post a eliminar, no se elimino nada!'
+            });
+        }
+        
+    }catch(error){
+        console.log("No se pudo eliminar el post!", error);
+        res.status(500).send({
+            message: "No se pudo eliminar el post!"+error
+        });
+    }
 });
