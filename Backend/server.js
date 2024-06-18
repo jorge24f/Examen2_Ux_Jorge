@@ -5,6 +5,9 @@ var urlEncodeParser = bodyParser.urlencoded({extended:true});
 
 const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 
+const {initializeApp} = require('firebase/app');
+const { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut } = require('firebase/auth');
+
 const app = express();
 app.use(urlEncodeParser);
 
@@ -12,12 +15,24 @@ let port = 3001;
 
 const uri = 'mongodb+srv://jflg24:YX1gkFQQab8yWq0u@claseux.zciih6l.mongodb.net/?retryWrites=true&w=majority&appName=ClaseUX';
 
+const firebaseConfig = {
+    apiKey: "AIzaSyDTlXOlK5btn-oijMjrCanCnZrZ_S77Ilk",
+    authDomain: "examen2ux-e5dff.firebaseapp.com",
+    projectId: "examen2ux-e5dff",
+    storageBucket: "examen2ux-e5dff.appspot.com",
+    messagingSenderId: "51059550869",
+    appId: "1:51059550869:web:bb721afaafe6221ba5499c",
+    measurementId: "G-S4JD54LFW9"
+};
+  
 const client = new MongoClient(uri, {
     serverApi:{
         version:ServerApiVersion.v1,
         strict:true
     }
 });
+
+const firebaseApp = initializeApp(firebaseConfig);
 
 async function run(){
     try{
@@ -33,8 +48,63 @@ app.listen(port, () => {
     run();
 }); 
 
+////////////////////Firebase
+app.post('/createUser',async (req,res)=>{
+    const auth = getAuth(firebaseApp);
+    const email = req.body.correo;
+    const password = req.body.contrasena;
+    try{
+        const userCredential = await createUserWithEmailAndPassword(auth,email,password);
+        console.log("Usuario creado con exito!");
+        res.status(200).send({ 
+            descripcion: 'Usuario creado con exito!',
+            resultado: userCredential
+        });
+    }catch(error){
+        console.log('Hubo un error al crear el usuario!',error);
+        res.status(500).send({ 
+            descripcion: 'No se pudo crear el usuario en firebase!',
+            resultado: error
+        });
+    }
+});
 
-////////////////////
+app.post('/logIn',async (req,res)=>{
+    const auth = getAuth(firebaseApp); // inicializamos nuestro servicio de autenticacion
+    const email = req.body.correo; // obtenemos el email
+    const password = req.body.contrasena; // obtenemos la contrasena
+    try{
+        const userCredential = await signInWithEmailAndPassword(auth, email, password);
+        console.log("Sesion iniciada con exito!");
+        res.status(200).send({
+            descripcion: 'Sesion iniciada con exito!',
+            resultado: userCredential
+        });
+    }catch(error){
+        res.status(500).send({
+            descripcion: 'No se pudo iniciar sesion!',
+            resultado: error
+        });
+    }
+});
+
+app.post('/logOut',async (req,res)=>{
+    const auth = getAuth(firebaseApp);
+    try{
+        await signOut(auth);
+        console.log("Sesion cerrada con exito!");
+        res.status(200).send({
+            descripcion: 'Sesion cerrada con exito!'
+        });
+    }catch(error){
+        res.status(500).send({
+            descripcion: 'No se pudo cerrar sesion!',
+            resultado: error
+        });
+    }
+});
+
+////////////////////Mongo
 app.post('/createPost',async (req,res)=>{
     try{
         let datos = req.body;
@@ -103,6 +173,7 @@ app.put('/editPost/:usuarioID',async (req,res)=>{
                 ...req.body
             }
         });
+        console.log("Post actualizado con exito!");
         res.status(200).send({
             message: 'Se actualizo el Post!',
             resultado: resultado
